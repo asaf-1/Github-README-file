@@ -313,3 +313,92 @@ docker rm -f jenkins-server
 Built and maintained by **Asaf** as a personal CI hub for multi-repo automation projects.
 
 ---
+
+Full Cleanup Guide (Reset Jenkins Completely)
+
+If you ever want to reset the entire Jenkins environment, including the Docker container and all Jenkins data, follow the steps below.
+
+⚠️ This will remove:
+
+Jenkins jobs
+
+pipeline history
+
+credentials
+
+plugins
+
+build artifacts
+
+Jenkins configuration
+
+1) Stop Jenkins Container
+docker stop jenkins-server
+2) Remove Jenkins Container
+docker rm jenkins-server
+
+or force remove if needed:
+
+docker rm -f jenkins-server
+3) Remove Jenkins Volumes (Important)
+
+Jenkins stores its data inside Docker volumes.
+
+List volumes:
+
+docker volume ls
+
+Look for something like:
+
+jenkins_home
+
+Remove it:
+
+docker volume rm jenkins_home
+
+If you want to remove all unused volumes:
+
+docker volume prune
+4) Remove Jenkins Image (Optional)
+docker rmi jenkins/jenkins:lts
+5) Clean Unused Docker Resources (Optional Full Reset)
+
+This removes unused containers, networks, and images.
+
+docker system prune -a
+
+⚠️ Only run this if you understand it may remove other unused Docker resources.
+
+6) Start Jenkins Again From Scratch
+
+Pull image again:
+
+docker pull jenkins/jenkins:lts
+
+Run Jenkins container again:
+
+docker run -d ^
+  --name jenkins-server ^
+  -p 8080:8080 ^
+  -p 50000:50000 ^
+  jenkins/jenkins:lts
+
+Then open:
+
+http://localhost:8080
+
+and repeat the Jenkins setup.
+
+Tip
+
+If you plan to run Jenkins long-term, consider creating a custom Docker image with tools preinstalled:
+
+Node.js
+
+Python
+
+Java
+
+Playwright
+
+This prevents reinstalling tools after container resets.
