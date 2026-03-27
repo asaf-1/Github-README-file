@@ -28,6 +28,91 @@ Negative tests:
 2. Registration password mismatch
 3. Invalid account lookup by API
 
+## Test Flows 1:1
+
+### Flow 1 of 4: Full Core Banking Flow
+
+Step to reproduce:
+
+1. Open ParaBank registration page
+2. Register a brand-new user through the UI
+3. Confirm registration succeeded
+4. Log out
+5. Go back to login page
+6. Log in with the new user
+7. Confirm the authenticated account overview is shown
+8. Call the API login endpoint to get the customer id
+9. Call the API accounts endpoint to get the existing account
+10. Call the API account endpoint to get the full account details
+11. Use `curl` to create a new `CHECKING` account from the existing account
+12. Confirm the `curl` call returned `200`
+13. Confirm the new account belongs to the same customer
+14. Poll the API until both accounts appear
+15. Open Accounts Overview in the UI
+16. Confirm the new account id appears in the UI
+17. Confirm the displayed balance matches the API balance
+18. Open Transfer Funds in the UI
+19. Transfer money from the original account to the new account
+20. Confirm the transfer success message in the UI
+21. Poll the API until the balances update correctly
+22. Confirm total money is still consistent
+23. Log out
+
+Expected result:
+
+- registration works
+- login works
+- customer id is returned
+- original account is returned
+- new checking account is created successfully
+- new account appears in the UI
+- transfer succeeds
+- balances update correctly
+- logout succeeds
+
+### Flow 2 of 4: Invalid Login Negative Test
+
+Step to reproduce:
+
+1. Open the login page
+2. Enter an invalid username
+3. Enter an invalid password
+4. Click log in
+
+Expected result:
+
+- user is not authenticated
+- login fails
+- error state is shown on the login page
+
+### Flow 3 of 4: Registration Password Mismatch Negative Test
+
+Step to reproduce:
+
+1. Open the registration page
+2. Fill valid user details
+3. Enter one password in the password field
+4. Enter a different password in the repeated password field
+5. Submit registration
+
+Expected result:
+
+- registration is blocked
+- mismatch validation message is shown
+- user account is not created
+
+### Flow 4 of 4: Invalid Account Lookup by API
+
+Step to reproduce:
+
+1. Send an API request for a clearly non-existing account id
+
+Expected result:
+
+- response status is `400`
+- response content type is plain text
+- response body explains that the account was not found
+
 ## Project Structure Explanation
 
 - `tests/e2e`
