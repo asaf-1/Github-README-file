@@ -28,47 +28,72 @@ Negative tests:
 2. Registration password mismatch
 3. Invalid account lookup by API
 
-## Test Flows 1:1
+## Test Flows by Purpose
 
 ### Flow 1 of 4: Full Core Banking Flow
 
-Step to reproduce:
+This is easier to remember if I divide it into stages:
 
-1. Open ParaBank registration page
-2. Register a brand-new user through the UI
-3. Confirm registration succeeded
-4. Log out
-5. Go back to login page
-6. Log in with the new user
-7. Confirm the authenticated account overview is shown
-8. Call the API login endpoint to get the customer id
-9. Call the API accounts endpoint to get the existing account
-10. Call the API account endpoint to get the full account details
-11. Use `curl` to create a new `CHECKING` account from the existing account
-12. Confirm the `curl` call returned `200`
-13. Confirm the new account belongs to the same customer
-14. Poll the API until both accounts appear
-15. Open Accounts Overview in the UI
-16. Confirm the new account id appears in the UI
-17. Confirm the displayed balance matches the API balance
-18. Open Transfer Funds in the UI
-19. Transfer money from the original account to the new account
-20. Confirm the transfer success message in the UI
-21. Poll the API until the balances update correctly
-22. Confirm total money is still consistent
-23. Log out
+Stage 1: User creation in UI
+
+1. Open registration page
+2. Register a brand-new user
+3. Confirm registration success
+
+Stage 2: Login validation in UI
+
+1. Log out
+2. Open login page
+3. Log in with the same user
+4. Confirm account overview is shown
+
+Stage 3: Customer and existing account lookup by API
+
+1. Call API login endpoint
+2. Get customer id
+3. Call customer accounts endpoint
+4. Confirm the customer has one existing checking account
+5. Call single account endpoint
+6. Confirm account details are correct
+
+Stage 4: New account creation by `curl`
+
+1. Call `createAccount` through `curl`
+2. Confirm status code `200`
+3. Confirm a new checking account id is returned
+
+Stage 5: New account verification through API and UI
+
+1. Poll the API until both accounts exist
+2. Confirm the new account belongs to the same customer
+3. Open Accounts Overview in the UI
+4. Confirm the new account id appears in the UI
+5. Confirm the displayed balance matches the API balance
+
+Stage 6: Transfer money in UI
+
+1. Open Transfer Funds
+2. Transfer money from the original account to the new account
+3. Confirm transfer success message
+
+Stage 7: Balance validation by API
+
+1. Poll the API until balances update
+2. Confirm source account balance decreased
+3. Confirm target account balance increased
+4. Confirm total money stayed consistent
+
+Stage 8: Logout
+
+1. Log out
+2. Confirm user returns to login page
 
 Expected result:
 
-- registration works
-- login works
-- customer id is returned
-- original account is returned
-- new checking account is created successfully
-- new account appears in the UI
-- transfer succeeds
-- balances update correctly
-- logout succeeds
+- the full user journey works end to end
+- UI and backend stay consistent
+- account creation and transfer both succeed
+- final balances are correct
 
 ### Flow 2 of 4: Invalid Login Negative Test
 
@@ -153,6 +178,74 @@ Examples:
 - `customers/{customerId}/accounts`
 - `accounts/{accountId}`
 - `createAccount`
+
+## Swagger Calls Used: What and Where
+
+### `login/{username}/{password}`
+
+What it was used for:
+
+- to get the customer object and customer id after the UI login
+
+Where it was used:
+
+- in the core flow after the user logs in through the UI
+- implemented in `src/api/bank-api.client.ts` in the `login()` method
+
+Why it mattered:
+
+- it connected the UI-created user to the backend customer id needed for the next API steps
+
+### `customers/{customerId}/accounts`
+
+What it was used for:
+
+- to get the list of accounts for the customer
+- first to get the original account
+- later to verify the new account appears
+- later to validate total balances
+
+Where it was used:
+
+- in the core flow after customer id retrieval
+- implemented in `src/api/bank-api.client.ts` in the `getCustomerAccounts()` method
+
+Why it mattered:
+
+- it was the main endpoint for confirming how many accounts the customer has and whether the new one was created
+
+### `accounts/{accountId}`
+
+What it was used for:
+
+- to get a single account's exact details
+- to verify the original account
+- to verify updated balances after transfer
+- also in the negative API test with an invalid id
+
+Where it was used:
+
+- in the core flow and in the negative API test
+- implemented in `src/api/bank-api.client.ts` in `getAccount()` and `getAccountResponse()`
+
+Why it mattered:
+
+- it gave exact account-level validation instead of only relying on the UI
+
+### `createAccount`
+
+What it was used for:
+
+- to create the new checking account
+
+Where it was used:
+
+- in the core flow
+- implemented in `src/utils/curl.ts` through `createCheckingAccountViaCurl()`
+
+Why it mattered:
+
+- this was an explicit assignment requirement and proved direct backend interaction using `curl`
 
 ## Why `curl` Was Used
 
